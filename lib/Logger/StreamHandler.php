@@ -58,7 +58,7 @@ class StreamHandler extends Handler {
         } else {
             $type = gettype($stream);
             $type = ($type === 'object') ? $stream::class : $stream;
-            throw new \TypeError(sprintf("Expected type 'resource|string'. Found '%s'", $type));
+            throw new InvalidArgumentException(sprintf('Argument #1 ($stream) must be of type resource|string, %s given', $type));
         }
 
         parent::__construct($levels, $options);

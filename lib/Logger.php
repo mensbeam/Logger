@@ -9,13 +9,11 @@ declare(strict_types=1);
 namespace MensBeam;
 use MensBeam\Logger\{
     Handler,
+    InvalidArgumentException,
     Level,
     StreamHandler
 };
-use Psr\Log\{
-    InvalidArgumentException,
-    LoggerInterface
-};
+use Psr\Log\LoggerInterface;
 
 
 class Logger implements LoggerInterface {
@@ -115,7 +113,7 @@ class Logger implements LoggerInterface {
 
     /**
      * Logs with an arbitrary level.
-     * @throws \Psr\Log\InvalidArgumentException
+     * @throws \MensBeam\Logger\InvalidArgumentException
      */
     public function log($level, string|\Stringable $message, array $context = []): void {
         // Because the interface won't allow limiting $level to just int|string this is
@@ -123,7 +121,7 @@ class Logger implements LoggerInterface {
         if (!is_int($level) && !is_string($level)) {
             $type = gettype($level);
             $type = ($type === 'object') ? $level::class : $type;
-            throw new \TypeError(sprintf("Expected type 'int|string'. Found '%s'.", $type));
+            throw new InvalidArgumentException(sprintf('Argument #1 ($level) must be of type int|string, %s given', $type));
         }
 
         // If the level is a string convert it to a RFC5424 level integer.

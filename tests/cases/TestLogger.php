@@ -7,9 +7,11 @@
 
 declare(strict_types=1);
 namespace MensBeam\Logger\Test;
-use MensBeam\Logger,
-    MensBeam\Logger\StreamHandler,
-    Psr\Log\InvalidArgumentException;
+use MensBeam\Logger;
+use MensBeam\Logger\{
+    InvalidArgumentException,
+    StreamHandler
+};
 
 
 /** @covers \MensBeam\Logger */
@@ -66,7 +68,7 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
     public static function provideErrorTests(): iterable {
         $iterable = [
             [
-                \TypeError::class,
+                InvalidArgumentException::class,
                 function (Logger $l): void {
                     $l->log(3.14, 'Ook!');
                 }
