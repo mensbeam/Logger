@@ -1,0 +1,28 @@
+{
+    "name": "mensbeam/logger",
+    "description": "A simple yet configurable logger",
+    "type": "library",
+    "require": {
+        "php": ">=8.1",
+        "psr/log": "^3.0",
+        "mensbeam/filesystem": "^1.0",
+        "nikic/php-parser": "^4.15"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "MensBeam\\": "lib/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Dustin Wilson",
+            "email": "dustin@dustinwilson.com"
+        }
+    ],
+    "require-dev": {
+        "ext-pcov": "*",
+        "docopt/docopt": "^1.0",
+        "phpunit/phpunit": "^10.0"
+    }
+}
