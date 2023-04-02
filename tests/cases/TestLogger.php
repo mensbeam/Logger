@@ -52,8 +52,8 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         $this->assertEquals(1, preg_match('/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ' . strtoupper($levelName) . '  Ook!\n/', $o));
     }
 
-    /** @dataProvider provideErrorTests */
-    public function testErrors(string $throwableClassName, \Closure $closure): void {
+    /** @dataProvider provideFatalErrorTests */
+    public function testFatalErrors(string $throwableClassName, \Closure $closure): void {
         $this->expectException($throwableClassName);
         $closure(new Logger());
     }
@@ -65,7 +65,7 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         }
     }
 
-    public static function provideErrorTests(): iterable {
+    public static function provideFatalErrorTests(): iterable {
         $iterable = [
             [
                 InvalidArgumentException::class,

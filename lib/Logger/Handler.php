@@ -19,37 +19,24 @@ abstract class Handler {
 
 
     public function __construct(array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []) {
-        $levelsCount = count($levels);
-        if ($levelsCount > 8) {
-            throw new InvalidArgumentException(sprintf('Argument #%s ($levels) cannot have more than 8 values', $this->getParamPosition()));
-        }
-        if (count($levels) === 0) {
-            throw new InvalidArgumentException(sprintf('Argument #%s ($levels) must not be empty', $this->getParamPosition()));
-        }
+        $this->levels = $this->verifyLevels($levels);
 
-        $levels = array_unique($levels, \SORT_NUMERIC);
-        foreach ($levels as $k => $v) {
-            if (!is_int($v)) {
-                $type = gettype($v);
-                $type = ($type === 'object') ? $v::class : $type;
-                throw new InvalidArgumentException(sprintf('Value #%s of argument #%s ($levels) must be of type int, %s given', $k, $this->getParamPosition(), $type));
-            }
-
-            if ($v < 0 || $v > 7) {
-                throw new RangeException(sprintf('Argument #%s ($levels) cannot be %s; it is not in the range 0 - 7', $this->getParamPosition(), $v));
-            }
-        }
-
-        $this->levels = array_values($levels);
-
+        $class = get_class($this);
         foreach ($options as $key => $value) {
-            $key = "_$key";
-            $this->$key = $value;
+            $name = "_$key";
+            if (!property_exists($class, $name)) {
+                trigger_error(sprintf('Undefined option in %s: %s', $class, $key), \E_USER_WARNING);
+                continue;
+            }
+            $this->$name = $value;
         }
     }
 
 
 
+    public function getLevels(): array {
+        return $this->levels;
+    }
 
     public function getOption(string $name): mixed {
         $class = get_class($this);
@@ -62,10 +49,15 @@ abstract class Handler {
         return $this->$name;
     }
 
+    public function setLevels(int ...$levels): void {
+        $this->levels = $this->verifyLevels($levels, false);
+    }
+
     public function setOption(string $name, mixed $value): void {
         $class = get_class($this);
         if (!property_exists($class, "_$name")) {
             trigger_error(sprintf('Undefined option in %s: %s', $class, $name), \E_USER_WARNING);
+            return;
         }
 
         $name = "_$name";
@@ -88,6 +80,35 @@ abstract class Handler {
     abstract protected function invokeCallback(string $datetime, int $level, string $channel, string $message, array $context = []): void;
 
 
+    protected function verifyLevels(array $levels, bool $constructor = true): array {
+        $levelsCount = count($levels);
+        if (count($levels) === 0) {
+            throw new InvalidArgumentException(sprintf('Argument #%s ($levels) must not be empty', ($constructor) ? $this->getParamPosition() : 1));
+        }
+
+        foreach ($levels as $k => $v) {
+            if ($v instanceof Level) {
+                $levels[$k] = $v = $v->value;
+            }
+
+            if (!is_int($v)) {
+                $type = gettype($v);
+                $type = ($type === 'object') ? $v::class : $type;
+                $levelClassName = Level::class;
+                throw new InvalidArgumentException(sprintf('Value #%s of argument #%s ($levels) must be of type int|%s, %s given', $k + 1, ($constructor) ? $this->getParamPosition() : 1, $levelClassName, $type));
+            }
+
+            if ($v < 0 || $v > 7) {
+                throw new RangeException(sprintf('Value #%s of argument #%s ($levels) cannot be %s; it is not in the range 0 - 7', $k + 1, ($constructor) ? $this->getParamPosition() : 1, $v));
+            }
+        }
+
+        $levels = array_unique($levels, \SORT_NUMERIC);
+        sort($levels, \SORT_NUMERIC);
+        return array_values($levels);
+    }
+
+
     private function getParamPosition(): int {
         $params = (new \ReflectionClass(get_called_class()))->getConstructor()->getParameters();
         foreach ($params as $k => $p) {
@@ -96,6 +117,6 @@ abstract class Handler {
             }
         }
 
-        return -1;
+        return -1; // @codeCoverageIgnore
     }
 }
