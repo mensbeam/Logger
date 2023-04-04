@@ -156,7 +156,13 @@ class Logger implements LoggerInterface {
         #   is actually an Exception before using it as such, as it MAY contain
         #   anything.
 
-        // We're not doing interpolation :)
+        // Really shitty user experience to not trigger a warning when someone does
+        // something incorrectly, but okay...
+        foreach ($context as $k => $v) {
+            if (($v instanceof \Throwable && $k !== 'exception') || (!$v instanceof \Throwable && $k === 'exception')) {
+                unset($context[$k]);
+            }
+        }
 
         foreach ($this->handlers as $h) {
             $h($level, $this->channel, $message, $context);

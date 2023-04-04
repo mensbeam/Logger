@@ -17,7 +17,7 @@ use MensBeam\Logger\{
 
 
 /** @covers \MensBeam\Logger\StreamHandler */
-class TestStreamHandler extends ErrorHandlingTestCase {
+class TestStreamHandler extends \PHPUnit\Framework\TestCase {
     /** @dataProvider provideResourceTypesTests */
     public function testResourceTypes(\Closure $closure): void {
         $regex = '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ERROR  Ook!\nEek!\n/';

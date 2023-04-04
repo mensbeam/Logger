@@ -57,8 +57,9 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         $regex = '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ' . strtoupper($levelName) . '  Ook!\n/';
         $this->assertEquals(1, preg_match($regex, $o));
 
-        // Try it again with Level enum
-        $l->log(constant(sprintf('%s::%s', Level::class, ucfirst($levelName))), 'Ook!');
+        // Try it again with Level enum, and for shits and giggles test removal
+        // of errant throwables in context
+        $l->log(constant(sprintf('%s::%s', Level::class, ucfirst($levelName))), 'Ook!', [ 'ook' => new \Exception('ook'), 'exception' => 'ook', 'eek' => 'Eek!' ]);
         rewind($s);
         $o = stream_get_contents($s);
         $this->assertEquals(1, preg_match($regex, $o));
