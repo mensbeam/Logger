@@ -40,8 +40,13 @@ class Logger implements LoggerInterface {
     public function __construct(?string $channel = null, Handler ...$handlers) {
         $this->setChannel($channel);
 
+        // Set some handlers if no handlers are set, printing lower levels to stderr,
+        // higher to stdout.
         if (count($handlers) === 0) {
-            $handlers[] = new StreamHandler('php://stdout');
+            $handlers = [
+                new StreamHandler(stream: 'php://stderr', levels: [ 0, 1, 2, 3 ]),
+                new StreamHandler(stream: 'php://stdout', levels: [ 4, 5, 6, 7 ])
+            ];
         }
 
         $this->handlers = $handlers;
@@ -116,12 +121,16 @@ class Logger implements LoggerInterface {
      * @throws \MensBeam\Logger\InvalidArgumentException
      */
     public function log($level, string|\Stringable $message, array $context = []): void {
+        if ($level instanceof Level) {
+            $level = $level->value;
+        }
+
         // Because the interface won't allow limiting $level to just int|string this is
         // necessary.
         if (!is_int($level) && !is_string($level)) {
             $type = gettype($level);
             $type = ($type === 'object') ? $level::class : $type;
-            throw new InvalidArgumentException(sprintf('Argument #1 ($level) must be of type int|string, %s given', $type));
+            throw new InvalidArgumentException(sprintf('Argument #1 ($level) must be of type int|%s|string, %s given', Level::class, $type));
         }
 
         // If the level is a string convert it to a RFC5424 level integer.

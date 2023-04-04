@@ -64,7 +64,11 @@ abstract class Handler {
         $this->$name = $value;
     }
 
-    public function __invoke(int $level, string $channel, string $message, array $context = []): void {
+    public function __invoke(int $level, ?string $channel, string $message, array $context = []): void {
+        if (!in_array($level, $this->levels)) {
+            return;
+        }
+
         $datetime = \DateTimeImmutable::createFromFormat('U.u', (string)microtime(true))->format($this->_datetimeFormat);
 
         $message = trim($message);
@@ -73,7 +77,7 @@ abstract class Handler {
             $message = $t($message, $context);
         }
 
-        $this->invokeCallback($datetime, $level, $channel, $message, $context);
+        $this->invokeCallback($datetime, $level, $channel ?? '', $message, $context);
     }
 
 

@@ -83,6 +83,17 @@ class TestHandler extends ErrorHandlingTestCase {
         rewind($s);
         $o = stream_get_contents($s);
         $this->assertEquals(1, preg_match('/^' . (new \DateTimeImmutable())->format('Y-m-d') .  '  ook ERROR  Ook! Eek!\n/', $o));
+        fclose($s);
+    }
+
+    public function testInvocationWithUnsupportedLevel(): void {
+        $s = fopen('php://memory', 'r+');
+        $l = new Logger('ook', new StreamHandler(stream: $s, levels: [ 0 ]));
+        $l->error('ook');
+        rewind($s);
+        $o = stream_get_contents($s);
+        $this->assertSame('', $o);
+        fclose($s);
     }
 
 

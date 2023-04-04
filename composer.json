@@ -28,6 +28,7 @@
     "require-dev": {
         "ext-pcov": "*",
         "docopt/docopt": "^1.0",
-        "phpunit/phpunit": "^10.0"
+        "phpunit/phpunit": "^10.0",
+        "mikey179/vfsstream": "^1.6"
     }
 }

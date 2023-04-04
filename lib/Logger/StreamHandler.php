@@ -28,7 +28,7 @@ class StreamHandler extends Handler {
         // The memory limit is in a shorthand format
         // (https://www.php.net/manual/en/faq.using.php#faq.using.shorthandbytes), so we
         // need it as a integer representation in bytes.
-        if (preg_match('/^\s*(?<num>\d+)(?:\.\d+)?\s*(?<unit>[gkm])\s*$/i', strtolower(ini_get('memory_limit')), $matches) === 1) {
+        if (preg_match('/^\s*(?<num>\d+)(?:\.\d+)?\s*(?<unit>[gkm])\s*$/i', ini_get('memory_limit'), $matches) === 1) {
             $num = (int)$matches['num'];
             switch ($matches['unit'] ?? '') {
                 case 'g': $num *= 1024;
@@ -61,6 +61,12 @@ class StreamHandler extends Handler {
             throw new InvalidArgumentException(sprintf('Argument #1 ($stream) must be of type resource|string, %s given', $type));
         }
 
+
+        // Bad dog, no biscuit!
+        if (($options['entryFormat'] ?? null) === '') {
+            $options['entryFormat'] = $this->_entryFormat;
+        }
+
         parent::__construct($levels, $options);
     }
 
@@ -73,11 +79,7 @@ class StreamHandler extends Handler {
 
 
     protected function invokeCallback(string $datetime, int $level, string $channel, string $message, array $context = []): void {
-        if (!in_array($level, $this->levels)) {
-            return;
-        }
-
-        // Do output formatting here.
+        // Do entry formatting here.
         $output = trim(preg_replace_callback('/%([a-z_]+)%/', function($m) use ($datetime, $level, $channel, $message) {
             switch ($m[1]) {
                 case 'channel': return $channel;

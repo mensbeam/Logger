@@ -10,6 +10,7 @@ namespace MensBeam\Logger\Test;
 use MensBeam\Logger;
 use MensBeam\Logger\{
     InvalidArgumentException,
+    Level,
     StreamHandler
 };
 
@@ -24,9 +25,13 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
     public function testDefaultHandler(): void {
         $l = new Logger();
         $h = $l->getHandlers();
-        $this->assertEquals(1, count($h));
+        $this->assertEquals(2, count($h));
         $this->assertInstanceOf(StreamHandler::class, $h[0]);
+        $this->assertInstanceOf(StreamHandler::class, $h[1]);
         $s = $h[0]->getStream();
+        $this->assertIsString($s);
+        $this->assertSame('php://stderr', $s);
+        $s = $h[1]->getStream();
         $this->assertIsString($s);
         $this->assertSame('php://stdout', $s);
     }
@@ -49,7 +54,15 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         $l->$levelName('Ook!');
         rewind($s);
         $o = stream_get_contents($s);
-        $this->assertEquals(1, preg_match('/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ' . strtoupper($levelName) . '  Ook!\n/', $o));
+        $regex = '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ' . strtoupper($levelName) . '  Ook!\n/';
+        $this->assertEquals(1, preg_match($regex, $o));
+
+        // Try it again with Level enum
+        $l->log(constant(sprintf('%s::%s', Level::class, ucfirst($levelName))), 'Ook!');
+        rewind($s);
+        $o = stream_get_contents($s);
+        $this->assertEquals(1, preg_match($regex, $o));
+        fclose($s);
     }
 
     /** @dataProvider provideFatalErrorTests */
