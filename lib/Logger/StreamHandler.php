@@ -40,27 +40,7 @@ class StreamHandler extends Handler {
             $this->chunkSize = min($this->chunkSize, max((int)($num / 10), 100 * 1024));
         }
 
-        if (is_resource($stream)) {
-            $this->resource = $stream;
-            stream_set_chunk_size($this->resource, $this->chunkSize);
-        } elseif(is_string($stream)) {
-            $stream = Path::canonicalize($stream);
-            // This wouldn't be useful for validating a URI schema, but it's fine for what this needs
-            preg_match('/^(?:(?<scheme>[^:\s\/]+):)?(?<slashes>\/*)/i', $stream, $matches);
-            if (in_array($matches['scheme'], [ 'file', '' ])) {
-                $slashCount = strlen($matches['slashes'] ?? '');
-                $relative = ($matches['scheme'] === 'file') ? ($slashCount === 0 || $slashCount === 2) : ($slashCount === 0);
-                $stream = (($relative) ? getcwd() : '') . '/' . substr($stream, strlen($matches[0]));
-            }
-
-            $this->url = $stream;
-            $this->urlScheme = $matches['scheme'] ?: 'file';
-        } else {
-            $type = gettype($stream);
-            $type = ($type === 'object') ? $stream::class : $stream;
-            throw new InvalidArgumentException(sprintf('Argument #1 ($stream) must be of type resource|string, %s given', $type));
-        }
-
+        $this->setStream($stream);
 
         // Bad dog, no biscuit!
         if (($options['entryFormat'] ?? null) === '') {
@@ -75,6 +55,29 @@ class StreamHandler extends Handler {
 
     public function getStream() {
         return $this->resource ?? $this->url;
+    }
+
+    public function setStream($value): void {
+        if (is_resource($value)) {
+            $this->resource = $value;
+            stream_set_chunk_size($this->resource, $this->chunkSize);
+        } elseif(is_string($value)) {
+            $value = Path::canonicalize($value);
+            // This wouldn't be useful for validating a URI schema, but it's fine for what this needs
+            preg_match('/^(?:(?<scheme>[^:\s\/]+):)?(?<slashes>\/*)/i', $value, $matches);
+            if (in_array($matches['scheme'], [ 'file', '' ])) {
+                $slashCount = strlen($matches['slashes'] ?? '');
+                $relative = ($matches['scheme'] === 'file') ? ($slashCount === 0 || $slashCount === 2) : ($slashCount === 0);
+                $value = (($relative) ? getcwd() : '') . '/' . substr($value, strlen($matches[0]));
+            }
+
+            $this->url = $value;
+            $this->urlScheme = $matches['scheme'] ?: 'file';
+        } else {
+            $type = gettype($value);
+            $type = ($type === 'object') ? $value::class : $value;
+            throw new InvalidArgumentException(sprintf('Argument #1 ($value) must be of type resource|string, %s given', $type));
+        }
     }
 
 

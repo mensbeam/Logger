@@ -8,10 +8,12 @@
 declare(strict_types=1);
 namespace MensBeam;
 use MensBeam\Logger\{
+    ArgumentCountError,
     Handler,
     InvalidArgumentException,
     Level,
-    StreamHandler
+    StreamHandler,
+    UnderflowException
 };
 use Psr\Log\LoggerInterface;
 
@@ -26,6 +28,12 @@ class Logger implements LoggerInterface {
     public const INFO = 6;
     public const DEBUG = 7;
 
+    /**
+     * Flag that causes warnings to be triggered when invalid throwables are in the
+     * context array
+     */
+    public bool $warnOnInvalidContextThrowables = true;
+
     /** The channel name identifier used for this instance of Logger */
     protected ?string $channel;
 
@@ -34,7 +42,7 @@ class Logger implements LoggerInterface {
      *
      * @var Handler[]
      */
-    protected array $handlers;
+    protected array $handlers = [];
 
 
     public function __construct(?string $channel = null, Handler ...$handlers) {
@@ -49,7 +57,7 @@ class Logger implements LoggerInterface {
             ];
         }
 
-        $this->handlers = $handlers;
+        $this->pushHandler(...$handlers);
     }
 
 
@@ -58,12 +66,49 @@ class Logger implements LoggerInterface {
         return $this->channel;
     }
 
+    public function getHandlers(): array {
+        return $this->handlers;
+    }
+
+    public function popHandler(): Handler {
+        if (count($this->handlers) === 1) {
+            throw new UnderflowException('Popping the last handler will cause the Logger to have zero handlers; there must be at least one');
+        }
+
+        return array_pop($this->handlers);
+    }
+
+    public function pushHandler(Handler ...$handlers): void {
+        if (count($handlers) === 0) {
+            throw new ArgumentCountError(__METHOD__ . ' expects at least 1 argument, 0 given');
+        }
+
+        $this->handlers = [ ...$this->handlers, ...$handlers ];
+    }
+
+    public function setHandlers(Handler ...$handlers): void {
+        $this->handlers = [];
+        $this->pushHandler(...$handlers);
+    }
+
     public function setChannel(?string $value): void {
         $this->channel = ($value !== null) ? substr($value, 0, 29) : null;
     }
 
-    public function getHandlers(): array {
-        return $this->handlers;
+    public function shiftHandler(): Handler {
+        if (count($this->handlers) === 1) {
+            throw new UnderflowException('Shifting the last handler will cause the Logger to have zero handlers; there must be at least one');
+        }
+
+        return array_shift($this->handlers);
+    }
+
+    public function unshiftHandler(Handler ...$handlers): void {
+        if (count($handlers) === 0) {
+            throw new ArgumentCountError(__METHOD__ . 'expects at least 1 argument, 0 given');
+        }
+
+        $this->handlers = [ ...$handlers, ...$this->handlers ];
     }
 
 
@@ -156,10 +201,28 @@ class Logger implements LoggerInterface {
         #   is actually an Exception before using it as such, as it MAY contain
         #   anything.
 
-        // Really shitty user experience to not trigger a warning when someone does
-        // something incorrectly, but okay...
+        // The first paragraph states that we must be lenient with objects in the
+        // context array, but the second paragraph says that exceptions MUST be in the
+        // exception key and that we MUST verify it. They're contradictory. We
+        // can't verify the exception while at the same time be lenient.
+
+        // Our solution is to essentially violate the specification; we will remove
+        // errant throwables and trigger warnings when encountered. Not issuing warnings
+        // here provides a bad user experience. The user can be left in a situation
+        // where it becomes difficult to ascertain why something isn't working. We do,
+        // however, provide an easy way to suppress these warnings when necessary.
         foreach ($context as $k => $v) {
-            if (($v instanceof \Throwable && $k !== 'exception') || (!$v instanceof \Throwable && $k === 'exception')) {
+            if ($k === 'exception' && !$v instanceof \Throwable) {
+                if ($this->warnOnInvalidContextThrowables) {
+                    $type = gettype($v);
+                    $type = ($type === 'object') ? $v::class : $type;
+                    trigger_error(sprintf('The \'exception\' key in argument #3 ($context) can only contain values of type \Throwable, %s given', $type), \E_USER_WARNING);
+                }
+                unset($context[$k]);
+            } elseif ($k !== 'exception' && $v instanceof \Throwable) {
+                if ($this->warnOnInvalidContextThrowables) {
+                    trigger_error(sprintf('Values of type %s can only be contained in the \'exception\' key in argument #3 ($context)', $v::class), \E_USER_WARNING);
+                }
                 unset($context[$k]);
             }
         }

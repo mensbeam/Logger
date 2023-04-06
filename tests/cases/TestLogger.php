@@ -9,14 +9,16 @@ declare(strict_types=1);
 namespace MensBeam\Logger\Test;
 use MensBeam\Logger;
 use MensBeam\Logger\{
+    ArgumentCountError,
     InvalidArgumentException,
     Level,
-    StreamHandler
+    StreamHandler,
+    UnderflowException
 };
 
 
 /** @covers \MensBeam\Logger */
-class TestLogger extends \PHPUnit\Framework\TestCase {
+class TestLogger extends ErrorHandlingTestCase {
     public function testConstructor(): void {
         $l = new Logger();
         $this->assertNull($l->getChannel());
@@ -46,6 +48,45 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         $this->assertSame(CWD . '/eek.log', $h[1]->getStream());
     }
 
+    public function testHandlerStackManipulation(): void {
+        $l = new Logger();
+        $l->pushHandler(new StreamHandler(stream: 'ook'));
+
+        $h = $l->getHandlers();
+        $this->assertEquals(3, count($h));
+        $this->assertInstanceOf(StreamHandler::class, $h[0]);
+        $this->assertInstanceOf(StreamHandler::class, $h[1]);
+        $this->assertInstanceOf(StreamHandler::class, $h[2]);
+        $this->assertSame(CWD . '/ook', end($h)->getStream());
+
+        $l->setHandlers(
+            new StreamHandler(stream: 'ook'),
+            new StreamHandler(stream: 'eek')
+        );
+        $h = $l->getHandlers();
+        $this->assertEquals(2, count($h));
+        $this->assertSame(CWD . '/ook', $h[0]->getStream());
+        $this->assertSame(CWD . '/eek', $h[1]->getStream());
+
+        $h1 = $l->shiftHandler();
+        $this->assertSame($h[0], $h1);
+        $h = $l->getHandlers();
+        $this->assertSame(CWD . '/eek', $h[0]->getStream());
+        $this->assertEquals(1, count($l->getHandlers()));
+
+        $l->unshiftHandler($h1);
+        $h = $l->getHandlers();
+        $this->assertSame($h[0], $h1);
+        $this->assertSame(CWD . '/ook', $h[0]->getStream());
+        $this->assertEquals(2, count($h));
+
+        $h2 = $l->popHandler();
+        $this->assertSame($h[1], $h2);
+        $h = $l->getHandlers();
+        $this->assertSame(CWD . '/ook', $h[0]->getStream());
+        $this->assertEquals(1, count($l->getHandlers()));
+    }
+
     /** @dataProvider provideLoggingTests */
     public function testLogging(string $levelName): void {
         $s = fopen('php://memory', 'r+');
@@ -70,6 +111,13 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
         $closure(new Logger());
     }
 
+    /** @dataProvider provideNonFatalErrorTests */
+    public function testNonFatalErrors(int $code, string $message, \Closure $closure): void {
+        $closure(new Logger());
+        $this->assertEquals($code, $this->lastError?->getCode());
+        $this->assertSame($message, $this->lastError?->getMessage());
+    }
+
 
     public static function provideLoggingTests(): iterable {
         foreach ([ 'emergency', 'alert', 'critical', 'error', 'warning', 'notice', 'info', 'debug' ] as $l) {
@@ -89,6 +137,57 @@ class TestLogger extends \PHPUnit\Framework\TestCase {
                 InvalidArgumentException::class,
                 function (Logger $l): void {
                     $l->log(42, 'Ook!');
+                }
+            ],
+            [
+                UnderflowException::class,
+                function (Logger $l): void {
+                    $l->popHandler();
+                    $l->popHandler();
+                }
+            ],
+            [
+                ArgumentCountError::class,
+                function (Logger $l): void {
+                    $l->pushHandler();
+                }
+            ],
+            [
+                UnderflowException::class,
+                function (Logger $l): void {
+                    $l->shiftHandler();
+                    $l->shiftHandler();
+                }
+            ],
+            [
+                ArgumentCountError::class,
+                function (Logger $l): void {
+                    $l->unshiftHandler();
+                }
+            ],
+        ];
+
+        foreach ($iterable as $i) {
+            yield $i;
+        }
+    }
+
+    public static function provideNonFatalErrorTests(): iterable {
+        $iterable = [
+            [
+                \E_USER_WARNING,
+                'The \'exception\' key in argument #3 ($context) can only contain values of type \Throwable, string given',
+                function (Logger $l): void {
+                    $l->setHandlers(new StreamHandler('php://memory'));
+                    $l->error('ook', [ 'exception' => 'ook' ]);
+                }
+            ],
+            [
+                \E_USER_WARNING,
+                'Values of type Exception can only be contained in the \'exception\' key in argument #3 ($context)',
+                function (Logger $l): void {
+                    $l->setHandlers(new StreamHandler('php://memory'));
+                    $l->error('ook', [ 'ook' => new \Exception('ook') ]);
                 }
             ]
         ];
