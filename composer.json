@@ -5,8 +5,7 @@
     "require": {
         "php": ">=8.1",
         "psr/log": "^3.0",
-        "mensbeam/filesystem": "^1.0",
-        "nikic/php-parser": "^4.15"
+        "mensbeam/filesystem": "^1.0"
     },
     "license": "MIT",
     "autoload": {
@@ -27,7 +26,6 @@
     ],
     "require-dev": {
         "ext-pcov": "*",
-        "docopt/docopt": "^1.0",
         "phpunit/phpunit": "^10.0",
         "mikey179/vfsstream": "^1.6"
     }

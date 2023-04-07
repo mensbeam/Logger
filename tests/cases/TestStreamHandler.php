@@ -11,6 +11,7 @@ use MensBeam\Logger,
     org\bovigo\vfs\vfsStream;
 use MensBeam\Logger\{
     InvalidArgumentException,
+    IOException,
     Level,
     StreamHandler
 };
@@ -22,11 +23,6 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
     public function testResourceTypes(\Closure $closure): void {
         $regex = '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ERROR  Ook!\nEek!\n/';
         $this->assertEquals(1, preg_match($regex, $closure()));
-    }
-
-    public function testFatalErrors(): void {
-        $this->expectException(InvalidArgumentException::class);
-        new StreamHandler(42);
     }
 
     public function testGetStream(): void {
@@ -45,6 +41,17 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
         $o = stream_get_contents($s);
         $this->assertEquals(1, preg_match($regex, $o));
         fclose($s);
+    }
+
+    /** @dataProvider provideFatalErrorTests */
+    public function testFatalErrors(string $throwableClassName, int $code, string $message, \Closure $closure): void {
+        $this->expectException($throwableClassName);
+        $this->expectExceptionMessage($message);
+        if ($throwableClassName === Error::class) {
+            $this->expectExceptionCode($code);
+        }
+
+        $closure(new StreamHandler());
     }
 
 
@@ -86,6 +93,23 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
             [ '%ook%', '/\n/' ],
             [ '%channel% %channel% %channel% %channel% %level% %level_name%', '/ook ook ook ook 3 ERROR\n/' ],
             [ '', '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ERROR  ook\n/' ]
+        ];
+
+        foreach ($iterable as $i) {
+            yield $i;
+        }
+    }
+
+    public static function provideFatalErrorTests(): iterable {
+        $iterable = [
+            [
+                InvalidArgumentException::class,
+                0,
+                'Argument #1 ($value) must be of type resource|string, integer given',
+                function (StreamHandler $h): void {
+                    new StreamHandler(42);
+                }
+            ]
         ];
 
         foreach ($iterable as $i) {

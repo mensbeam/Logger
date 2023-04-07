@@ -75,7 +75,7 @@ class StreamHandler extends Handler {
             $this->urlScheme = $matches['scheme'] ?: 'file';
         } else {
             $type = gettype($value);
-            $type = ($type === 'object') ? $value::class : $value;
+            $type = ($type === 'object') ? $value::class : $type;
             throw new InvalidArgumentException(sprintf('Argument #1 ($value) must be of type resource|string, %s given', $type));
         }
     }

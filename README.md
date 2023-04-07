@@ -4,6 +4,8 @@
 [d]: https://www.php-fig.org/psr/psr-3/#13-context
 [e]: https://www.php-fig.org/psr/psr-3/#11-basics
 [f]: http://tools.ietf.org/html/rfc5424
+[g]: https://code.mensbeam.com/MensBeam/Filesystem
+[h]: https://code.mensbeam.com/MensBeam/Catcher
 
 # Logger #
 
@@ -21,6 +23,95 @@ This library attempts what we're calling an "opinionated" implementation of PSR-
 
 4. Also in the first item of [section 1.3][d] it states categorically that implementors must not trigger a warning when errant data is in the `$context` array and treat it with _"as much lenience as possible"_. It then states in the following ittem that if an exception is present in the context data it *must* be in the `exception` key and that implementors *must* verify the `exception` key. This is contradictory. You can't verify the `exception` key without triggering an error or exception when it's wrong. The user should be notified they've made a mistake; it's bad design otherwise. Our solution to this problem is to remove errant throwables from `$context` and also trigger warnings when they're encountered. However, `Logger->$warnOnInvalidContextThrowables` is provided to make it easy to suppress the warnings if necessary.
 
+## Requirements ##
+
+* PHP 8.1 or newer with the following _optional_ extensions:
+    * ext-ctype
+    * ext-mbstring
+
+### Note ###
+
+This library uses [mensbeam/filesystem][g] which provides polyfills for `ext-ctype` and `ext-mbstring`. If you have these extensions installed the polyfills won't be used. However, they are still installed. If you don't want the polyfills needlessly installed you can add this to your project's `composer.json`:
+
+```json
+{
+    "require": {
+        "ext-ctype": "*",
+        "ext-mbstring": "*"
+    },
+    "provide": {
+        "symfony/polyfill-ctype": "*",
+        "symfony/polyfill-mbstring": "*"
+    }
+}
+```
+
+## Installation ##
+
+```bash
+composer require mensbeam/logger
+```
+
 ## Usage ##
 
-To be continued...
+This library works without any configuration, but it might not be quite how you think it would work by default:
+
+```php
+use MensBeam\Logger;
+
+$logger = new Logger();
+```
+
+This will create a logger that outputs all debug, info, notice, and warning entries to `STDOUT` while any error, critical, alert, and emergency entries are output to `STDERR`. This seems like it would be a bizarre default since it causes duplicate output to the shell on errors. However, if you accompany it with an error handler like [`Catcher`][h] it suddenly makes sense:
+
+```php
+use MensBeam\{
+    Catcher,
+    Logger
+};
+use MensBeam\Catcher\PlainTextHandler;
+
+$catcher = new Catcher(new PlainTextHandler([
+    'logger' => new Logger('log'),
+    'silent' => true
+]));
+```
+
+Now, _Logger_ will take care of the printing. But, _Logger_ can do far more.
+
+## Documentation ##
+
+### MensBeam\Logger ###
+
+```php
+namespace MensBeam;
+
+class Logger implements Psr\Log\LoggerInterface {
+    public bool $warnOnInvalidContextThrowables = true;
+
+    public function __construct(?string $channel = null, Handler ...$handlers);
+
+    public function getChannel(): ?string;
+    public function getHandlers(): array;
+    public function popHandler(): Handler;
+    public function pushHandler(Handler ...$handlers): void;
+    public function setHandlers(Handler ...$handlers): void;
+    public function setChannel(?string $value): void;
+    public function shiftHandler(): Handler;
+    public function unshiftHandler(Handler ...$handlers): void;
+    public function emergency(string|\Stringable $message, array $context = []): void;
+    public function alert(string|\Stringable $message, array $context = []): void;
+    public function critical(string|\Stringable $message, array $context = []): void;
+    public function error(string|\Stringable $message, array $context = []): void;
+    public function warning(string|\Stringable $message, array $context = []): void;
+    public function notice(string|\Stringable $message, array $context = []): void;
+    public function info(string|\Stringable $message, array $context = []): void;
+    public function debug(string|\Stringable $message, array $context = []): void;
+    public function log($level, string|\Stringable $message, array $context = []): void;
+}
+```
+
+#### Properties ####
+
+_warnOnInvalidContextThrowables_: When set to true Logger will trigger warnings when invalid `Throwable`s are in the `$context` array in the logging methods.  
+
