@@ -15,7 +15,7 @@ _Logger_ is a simple yet configurable logger for PHP. It is an opinionated imple
 
 ## Opinionated? ##
 
-This library attempts what we're calling an "opinionated" implementation of PSR-3. This is because while it successfully implements `Psr\Log\LoggerInterface` Logger deviates from the true spirit of the specification in various ways:
+This library attempts what we're calling an "opinionated" implementation of PSR-3. This is because while it successfully implements `Psr\Log\LoggerInterface` _Logger_ deviates from the true spirit of the specification in various ways:
 
 1. In [section 1.1][e] PSR-3 states that when calling the `log` method with one of the log level constants (later shown to be in `Psr\Log\LogLevel`) it must have the same result as calling the level-specific methods. The log level constants in `Psr\Log\LogLevel` are strings, but the `$level` parameter of the `log` method in `Psr\Log\LoggerInterface` is typeless. The words of the specification suggest that the `$level` parameter should be a string, but the actual code implementors are to use doesn't specify a type. The same section also references [RFC 5424][f] when mentioning the log level methods, but why use strings when there are standardized integers used to identify severity? Since the interface allows for any type for `$level`, _Logger_ will prefer the actual RFC standard's integers but will accept and convert PSR-3's strings internally to the integers just so it can remain PSR-3 compatible.
 
@@ -23,20 +23,18 @@ This library attempts what we're calling an "opinionated" implementation of PSR-
 
 3. The specification in [section 1.3][d] also specifies that if an `Exception` object is passed in the `$context` parameter it must be within an `exception` key. This makes sense, but curiously there's nary a mention of what to do with an `Error` object. They've existed since PHP 7 and can be thrown just like exceptions. _Logger_ will accept any `Throwable` in the `exception` key, but at present does nothing with it. Theoretically future handlers could be written to take advantage of it for structured data.
 
-4. Also in the first item of [section 1.3][d] it states categorically that implementors must not trigger a warning when errant data is in the `$context` array and treat it with _"as much lenience as possible"_. It then states in the following ittem that if an exception is present in the context data it *must* be in the `exception` key and that implementors *must* verify the `exception` key. This is contradictory. You can't verify the `exception` key without triggering an error or exception when it's wrong. The user should be notified they've made a mistake; it's bad design otherwise. Our solution to this problem is to remove errant throwables from `$context` and also trigger warnings when they're encountered. However, `Logger->$warnOnInvalidContextThrowables` is provided to make it easy to suppress the warnings if necessary.
+4. Also in the first item of [section 1.3][d] it states categorically that implementors must not trigger a warning when errant data is in the `$context` array and treat it with _"as much lenience as possible"_. It then states in the following item that if an exception is present in the context data it *must* be in the `exception` key and that implementors *must* verify the `exception` key. This is contradictory. You can't verify the `exception` key without triggering an error or exception when it's wrong. The user should be notified they've made a mistake; it's bad design otherwise. Our solution to this problem is to remove errant throwables from `$context` and also trigger warnings when they're encountered. However, `Logger->$warnOnInvalidContextThrowables` is provided to make it easy to suppress the warnings if necessary.
 
 ## Requirements ##
 
-* PHP 8.1 or newer with the following _optional, but suggested_ extensions:
-    * ext-ctype
-    * ext-mbstring
-* [mensbeam/filesystem][g]: ">=1.0"
-    * [symfony/polyfill-ctype][i]: ">=1.8"
-    * [symfony/polyfill-mbstring][j]: ">=1.8"
+* PHP >= 8.1
+* [mensbeam/filesystem][g] >= 1.0
+* ext-ctype or [symfony/polyfill-ctype][i] >= 1.8
+* ext-mbstring or [symfony/polyfill-mbstring][j] >= 1.8
 
 ### Note ###
 
-This library uses [mens beam/filesystem][g] which provides polyfills for `ext-ctype` and `ext-mbstring`. If you have these extensions installed the polyfills won't be used. However, they are still installed. If you don't want the polyfills needlessly installed you can add this to your project's `composer.json`:
+This library uses [mensbeam/filesystem][g] which provides polyfills for `ext-ctype` and `ext-mbstring`. If you have these extensions installed the polyfills won't be used. However, they are still installed. If you don't want the polyfills needlessly installed you can add this to your project's `composer.json`:
 
 ```json
 {
@@ -263,6 +261,26 @@ Properties which begin with an underscore are all options. They can be set eithe
 _bubbles_: When set to true the stack loop will continue onto the next handler; if false it won't. Defaults to _true_  
 _messageTransform_: A callable to use to transform messages before outputting. Defaults to _null_  
 _timeFormat_: The PHP-standard date format which to use for times in output. Defaults to _"M d H:i:s"_  
+
+##### Message Transform #####
+
+The _messageTransform_ option allows for manipulation of log messages. It accepts any callable with the following structure:
+
+```php
+function (string $message, array $context): string;
+```
+
+One common use of this feature would be to do string interpolation which isn't handled by the library. By providing a message transform it's possible to use any preferred method of interpolation:
+
+```php
+$handler = new StreamHandler(options: [
+    'messageTransform' => function (string $message, array $context): string {
+        return vsprintf($message, $context);
+    }
+])
+```
+
+Of course this is a simplistic example. One would want to convert the `$context` array to numerical keys (or just use numerical keys) before usage in `vsprintf`, but as can be seen it's very possible.
 
 #### MensBeam\Logger\Handler::getLevels ####
 
