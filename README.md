@@ -237,7 +237,7 @@ abstract class Handler {
     protected array $levels;
 
     protected bool $_bubbles = true;
-    protected string|\Closure|null $_messageTransform = null;
+    protected callable $_messageTransform = null;
     protected string $_timeFormat = 'M d H:i:s';
 
     public function __construct(array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []);

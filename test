@@ -1,5 +1,11 @@
 #!/usr/bin/env php
 <?php
+/**
+ * @license MIT
+ * Copyright 2022 Dustin Wilson, et al.
+ * See LICENSE and AUTHORS files for details
+ */
+
 $dir = ini_get('extension_dir');
 $php = escapeshellarg(\PHP_BINARY);
 $code = escapeshellarg(__DIR__ . '/lib');

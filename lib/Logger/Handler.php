@@ -12,7 +12,7 @@ abstract class Handler {
     protected array $levels;
 
     protected bool $_bubbles = true;
-    protected string|\Closure|null $_messageTransform = null;
+    protected $_messageTransform = null;
     protected string $_timeFormat = 'M d H:i:s';
 
 
@@ -20,14 +20,8 @@ abstract class Handler {
     public function __construct(array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []) {
         $this->levels = $this->verifyLevels($levels);
 
-        $class = get_class($this);
         foreach ($options as $key => $value) {
-            $name = "_$key";
-            if (!property_exists($class, $name)) {
-                trigger_error(sprintf('Undefined option in %s: %s', $class, $key), \E_USER_WARNING);
-                continue;
-            }
-            $this->$name = $value;
+            $this->setOption($key, $value);
         }
     }
 
@@ -57,6 +51,10 @@ abstract class Handler {
         if (!property_exists($class, "_$name")) {
             trigger_error(sprintf('Undefined option in %s: %s', $class, $name), \E_USER_WARNING);
             return;
+        }
+
+        if ($name === 'messageTransform' && !is_callable($value)) {
+            throw new TypeError(sprintf('Value of messageTransform option must be callable'));
         }
 
         $name = "_$name";

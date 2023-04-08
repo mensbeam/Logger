@@ -13,7 +13,8 @@ use MensBeam\Logger\{
     InvalidArgumentException,
     Level,
     RangeException,
-    StreamHandler
+    StreamHandler,
+    TypeError
 };
 
 
@@ -99,6 +100,14 @@ class TestHandler extends ErrorHandlingTestCase {
 
     public static function provideFatalErrorTests(): iterable {
         $iterable = [
+            [
+                TypeError::class,
+                0,
+                'Value of messageTransform option must be callable',
+                function (Handler $h): void {
+                    $h->setOption('messageTransform', 42);
+                }
+            ],
             [
                 InvalidArgumentException::class,
                 0,
