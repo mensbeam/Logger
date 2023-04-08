@@ -29,8 +29,8 @@ This library attempts what we're calling an "opinionated" implementation of PSR-
 
 * PHP >= 8.1
 * [mensbeam/filesystem][g] >= 1.0
-* ext-ctype or [symfony/polyfill-ctype][i] >= 1.8
-* ext-mbstring or [symfony/polyfill-mbstring][j] >= 1.8
+    * ext-ctype or [symfony/polyfill-ctype][i] >= 1.8
+    * ext-mbstring or [symfony/polyfill-mbstring][j] >= 1.8
 
 ### Note ###
 
