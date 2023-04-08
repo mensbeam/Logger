@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e0336fd838352efa362298a3b61d3379",
+    "content-hash": "49bbaf37c3b2e84629975e5caba89136",
     "packages": [
         {
             "name": "mensbeam/filesystem",

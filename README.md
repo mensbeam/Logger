@@ -8,6 +8,7 @@
 [h]: https://code.mensbeam.com/MensBeam/Catcher
 [i]: https://github.com/symfony/polyfill/tree/main/src/Ctype
 [j]: https://github.com/symfony/polyfill/tree/main/src/Mbstring
+[k]: https://github.com/php-fig/log
 
 # Logger #
 
@@ -31,6 +32,7 @@ This library attempts what we're calling an "opinionated" implementation of PSR-
 * [mensbeam/filesystem][g] >= 1.0
     * ext-ctype or [symfony/polyfill-ctype][i] >= 1.8
     * ext-mbstring or [symfony/polyfill-mbstring][j] >= 1.8
+* [psr/log][k] ^3.0
 
 ### Note ###
 
