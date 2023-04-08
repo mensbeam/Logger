@@ -6,6 +6,8 @@
 [f]: http://tools.ietf.org/html/rfc5424
 [g]: https://code.mensbeam.com/MensBeam/Filesystem
 [h]: https://code.mensbeam.com/MensBeam/Catcher
+[i]: https://github.com/symfony/polyfill/tree/main/src/Ctype
+[j]: https://github.com/symfony/polyfill/tree/main/src/Mbstring
 
 # Logger #
 
@@ -25,13 +27,16 @@ This library attempts what we're calling an "opinionated" implementation of PSR-
 
 ## Requirements ##
 
-* PHP 8.1 or newer with the following _optional_ extensions:
+* PHP 8.1 or newer with the following _optional, but suggested_ extensions:
     * ext-ctype
     * ext-mbstring
+* [mensbeam/filesystem][g]: ">=1.0"
+    * [symfony/polyfill-ctype][i]: ">=1.8"
+    * [symfony/polyfill-mbstring][j]: ">=1.8"
 
 ### Note ###
 
-This library uses [mensbeam/filesystem][g] which provides polyfills for `ext-ctype` and `ext-mbstring`. If you have these extensions installed the polyfills won't be used. However, they are still installed. If you don't want the polyfills needlessly installed you can add this to your project's `composer.json`:
+This library uses [mens beam/filesystem][g] which provides polyfills for `ext-ctype` and `ext-mbstring`. If you have these extensions installed the polyfills won't be used. However, they are still installed. If you don't want the polyfills needlessly installed you can add this to your project's `composer.json`:
 
 ```json
 {
@@ -220,6 +225,7 @@ Takes a provided PSR-3 string level and returns a `Level` enum.
 
 Returns a PSR-3 string level representation of the enum.
 
+
 ### MensBeam\Logger\Handler ###
 
 Handlers inherit from this abstract class. Since it is an abstract class meant for constructing handlers protected methods and properties will be documented here as well.
@@ -252,7 +258,7 @@ _levels_: This is where the levels the handler is configured to support are stor
 
 #### Options ####
 
-Properties which begin with an underscore are all options. They can be set either through the constructor or via `setHandler` by name, removing the underscore (\_) at the beginning. All handlers inherit these options. Options in inherited classes should also begin with an underscore (\_). How to extend `Handler` will be explained further down in the document.
+Properties which begin with an underscore are all options. They can be set either through the constructor or via `setHandler` by name, removing the underscore (\_) at the beginning. All handlers inherit these options. Options in inherited classes should also begin with an underscore (\_).
 
 _bubbles_: When set to true the stack loop will continue onto the next handler; if false it won't. Defaults to _true_  
 _messageTransform_: A callable to use to transform messages before outputting. Defaults to _null_  
@@ -281,3 +287,41 @@ Outputs/dispatches the log entry
 #### MensBeam\Logger\Handler::invokeCallback (protected) ####
 
 A callback method meant to be extended by inherited classes to output/dispatch the log entry
+
+
+### MensBeam\Logger\StreamHandler ###
+
+```php
+namespace MensBeam\Logger;
+
+class StreamHandler extends Handler {
+    public function __construct(resource|string $stream = 'php://stdout', array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []);
+
+    public function getStream(): resource|string;
+    public function setStream(resource|string $value): void;
+}
+```
+
+#### Options ####
+
+_entryFormat_: The format of the outputted log entry. Defaults to _"%time%  %channel% %level\_name%  %message%"_  
+
+##### Entry Format #####
+
+The following are recognized in the _entryFormat_ option:
+
+| Format       | Description       | Example                                                                |
+| ------------ | ----------------- | ---------------------------------------------------------------------- |
+| %channel%    | channel name      | ook                                                                    |
+| %level%      | log level integer | 1                                                                      |
+| %level_name% | log level name    | ALERT                                                                  |
+| %message%    | log message       | Uncaught Error: Call to undefined function ook() in /path/to/ook.php:7 |
+| %time%       | timestamp         | Apr 08 09:58:12                                                        |
+
+#### MensBeam\Logger\StreamHandler::getStream ####
+
+Returns the resource or a URL where the handler will output to
+
+#### MensBeam\Logger\StreamHandler::setStream ####
+
+Sets where the handler will output to
