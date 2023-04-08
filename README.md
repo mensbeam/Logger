@@ -85,6 +85,11 @@ Now, _Logger_ will take care of the printing. But, _Logger_ can do far more.
 
 ```php
 namespace MensBeam;
+use MensBeam\Logger\{
+    Handler,
+    Level
+};
+
 
 class Logger implements Psr\Log\LoggerInterface {
     public bool $warnOnInvalidContextThrowables = true;
@@ -95,10 +100,11 @@ class Logger implements Psr\Log\LoggerInterface {
     public function getHandlers(): array;
     public function popHandler(): Handler;
     public function pushHandler(Handler ...$handlers): void;
-    public function setHandlers(Handler ...$handlers): void;
     public function setChannel(?string $value): void;
+    public function setHandlers(Handler ...$handlers): void;
     public function shiftHandler(): Handler;
     public function unshiftHandler(Handler ...$handlers): void;
+
     public function emergency(string|\Stringable $message, array $context = []): void;
     public function alert(string|\Stringable $message, array $context = []): void;
     public function critical(string|\Stringable $message, array $context = []): void;
@@ -107,7 +113,7 @@ class Logger implements Psr\Log\LoggerInterface {
     public function notice(string|\Stringable $message, array $context = []): void;
     public function info(string|\Stringable $message, array $context = []): void;
     public function debug(string|\Stringable $message, array $context = []): void;
-    public function log($level, string|\Stringable $message, array $context = []): void;
+    public function log(int|string|Level $level, string|\Stringable $message, array $context = []): void;
 }
 ```
 
@@ -115,3 +121,163 @@ class Logger implements Psr\Log\LoggerInterface {
 
 _warnOnInvalidContextThrowables_: When set to true Logger will trigger warnings when invalid `Throwable`s are in the `$context` array in the logging methods.  
 
+#### MensBeam\Logger::getChannel ####
+
+Returns the channel name for the instance of _Logger_.
+
+#### MensBeam\Logger::getHandlers ####
+
+Returns an array of the handlers defined for use in the _Logger_ instance.
+
+#### MensBeam\Logger::popHandler ####
+
+Pops the last handler off the stack and returns it
+
+#### MensBeam\Logger::pushHandler ####
+
+Pushes the specified handler(s) onto the stack
+
+#### MensBeam\Logger::setChannel ####
+
+Sets the channel to the specified string
+
+#### MensBeam\Logger::setHandlers ####
+
+Replaces the stack of handlers with those specified as parameters
+
+#### MensBeam\Logger::shiftHandler ####
+
+Shifts the first handler off the stack of handlers and returns it
+
+#### MensBeam\Logger::unshiftHandler ####
+
+Unshifts the specified handler(s) onto the beginning of the stack
+
+#### MensBeam\Logger::emergency ####
+
+Adds an emergency entry to the log
+
+#### MensBeam\Logger::alert ####
+
+Adds an alert entry to the log
+
+#### MensBeam\Logger::critical ####
+
+Adds a critical entry to the log
+
+#### MensBeam\Logger::error ####
+
+Adds an error entry to the log
+
+#### MensBeam\Logger::warning ####
+
+Adds a warning entry to the log
+
+#### MensBeam\Logger::notice ####
+
+Adds a notice entry to the log
+
+#### MensBeam\Logger::info ####
+
+Adds an info entry to the log
+
+#### MensBeam\Logger::debug ####
+
+Adds a debug entry to the log
+
+#### MensBeam\Logger::log ####
+
+Adds an entry to the log in the specified level
+
+
+### MensBeam\Logger\Level ###
+
+This is an enum of the RFC 5424 integer values for each of the log levels; also provides methods for converting to and from PSR-3 string values.
+
+```php
+namespace MensBeam;
+
+enum Level: int {
+    case Emergency = 0;
+    case Alert = 1;
+    case Critical = 2;
+    case Error = 3;
+    case Warning = 4;
+    case Notice = 5;
+    case Info = 6;
+    case Debug = 7;
+
+    public static function fromPSR3(string $level): self;
+    public function toPSR3(): string;
+}
+```
+
+#### MensBeam\Logger\Level::fromPSR3 ####
+
+Takes a provided PSR-3 string level and returns a `Level` enum.
+
+#### MensBeam\Logger\Level::toPSR3 ####
+
+Returns a PSR-3 string level representation of the enum.
+
+### MensBeam\Logger\Handler ###
+
+Handlers inherit from this abstract class. Since it is an abstract class meant for constructing handlers protected methods and properties will be documented here as well.
+
+```php
+namespace MensBeam\Logger;
+
+abstract class Handler {
+    protected array $levels;
+
+    protected bool $_bubbles = true;
+    protected string|\Closure|null $_messageTransform = null;
+    protected string $_timeFormat = 'M d H:i:s';
+
+    public function __construct(array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []);
+
+    public function getLevels();
+    public function getOption(string $name): mixed;
+    public function setLevels(int ...$levels): void;
+    public function setOption(string $name, mixed $value): void;
+    public function __invoke(int $level, ?string $channel, string $message, array $context = []): void;
+
+    abstract protected function invokeCallback(string $time, int $level, string $channel, string $message, array $context = []): void;
+}
+```
+
+#### Properties (Protected) ####
+
+_levels_: This is where the levels the handler is configured to support are stored  
+
+#### Options ####
+
+Properties which begin with an underscore are all options. They can be set either through the constructor or via `setHandler` by name, removing the underscore (\_) at the beginning. All handlers inherit these options. Options in inherited classes should also begin with an underscore (\_). How to extend `Handler` will be explained further down in the document.
+
+_bubbles_: When set to true the stack loop will continue onto the next handler; if false it won't. Defaults to _true_  
+_messageTransform_: A callable to use to transform messages before outputting. Defaults to _null_  
+_timeFormat_: The PHP-standard date format which to use for times in output. Defaults to _"M d H:i:s"_  
+
+#### MensBeam\Logger\Handler::getLevels ####
+
+Returns the levels the handler is configured to support
+
+#### MensBeam\Logger\Handler::getOption ####
+
+Returns the value of the provided option name
+
+#### MensBeam\Logger\Handler::setLevels ####
+
+Sets the levels the handler will then support
+
+#### MensBeam\Logger\Handler::setOption ####
+
+Sets the provided option with the provided value
+
+#### MensBeam\Logger\Handler::__invoke ####
+
+Outputs/dispatches the log entry
+
+#### MensBeam\Logger\Handler::invokeCallback (protected) ####
+
+A callback method meant to be extended by inherited classes to output/dispatch the log entry

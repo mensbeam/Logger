@@ -40,14 +40,14 @@ class TestHandler extends ErrorHandlingTestCase {
     public function testOptions(): void {
         $h = new StreamHandler(options: [
             'bubbles' => false,
-            'datetimeFormat' => 'Y-m-d\TH:i:sP'
+            'timeFormat' => 'Y-m-d\TH:i:sP'
         ]);
         $this->assertFalse($h->getOption('bubbles'));
-        $this->assertSame('Y-m-d\TH:i:sP', $h->getOption('datetimeFormat'));
+        $this->assertSame('Y-m-d\TH:i:sP', $h->getOption('timeFormat'));
         $h->setOption('bubbles', true);
-        $h->setOption('datetimeFormat', 'Y-m-d');
+        $h->setOption('timeFormat', 'Y-m-d');
         $this->assertTrue($h->getOption('bubbles'));
-        $this->assertSame('Y-m-d', $h->getOption('datetimeFormat'));
+        $this->assertSame('Y-m-d', $h->getOption('timeFormat'));
     }
 
     /** @dataProvider provideFatalErrorTests */
@@ -71,10 +71,10 @@ class TestHandler extends ErrorHandlingTestCase {
 
     public function testInvocation(): void {
         $s = fopen('php://memory', 'r+');
-        // Test setting the datetimeFormat and messageTransform options, showing
+        // Test setting the timeFormat and messageTransform options, showing
         // a very simple example of using sprintf for interpolation.
         $l = new Logger('ook', new StreamHandler(stream: $s, options: [
-            'datetimeFormat' => 'Y-m-d',
+            'timeFormat' => 'Y-m-d',
             'messageTransform' => function (string $message, array $context): string {
                 return vsprintf($message, $context);
             }

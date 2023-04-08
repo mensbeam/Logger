@@ -10,11 +10,10 @@ namespace MensBeam\Logger;
 
 abstract class Handler {
     protected array $levels;
-    protected \DateTimeImmutable $timestamp;
 
     protected bool $_bubbles = true;
-    protected string $_datetimeFormat = 'M d H:i:s';
     protected string|\Closure|null $_messageTransform = null;
+    protected string $_timeFormat = 'M d H:i:s';
 
 
 
@@ -69,7 +68,7 @@ abstract class Handler {
             return;
         }
 
-        $datetime = \DateTimeImmutable::createFromFormat('U.u', (string)microtime(true))->format($this->_datetimeFormat);
+        $time = \DateTimeImmutable::createFromFormat('U.u', (string)microtime(true))->format($this->_timeFormat);
 
         $message = trim($message);
         if ($this->_messageTransform !== null) {
@@ -77,11 +76,11 @@ abstract class Handler {
             $message = $t($message, $context);
         }
 
-        $this->invokeCallback($datetime, $level, $channel ?? '', $message, $context);
+        $this->invokeCallback($time, $level, $channel ?? '', $message, $context);
     }
 
 
-    abstract protected function invokeCallback(string $datetime, int $level, string $channel, string $message, array $context = []): void;
+    abstract protected function invokeCallback(string $time, int $level, string $channel, string $message, array $context = []): void;
 
 
     protected function verifyLevels(array $levels, bool $constructor = true): array {

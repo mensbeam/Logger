@@ -77,13 +77,13 @@ class Logger implements LoggerInterface {
         $this->handlers = [ ...$this->handlers, ...$handlers ];
     }
 
+    public function setChannel(?string $value): void {
+        $this->channel = ($value !== null) ? substr($value, 0, 29) : null;
+    }
+
     public function setHandlers(Handler ...$handlers): void {
         $this->handlers = [];
         $this->pushHandler(...$handlers);
-    }
-
-    public function setChannel(?string $value): void {
-        $this->channel = ($value !== null) ? substr($value, 0, 29) : null;
     }
 
     public function shiftHandler(): Handler {

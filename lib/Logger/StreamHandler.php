@@ -19,7 +19,7 @@ class StreamHandler extends Handler {
     protected ?string $url = null;
     protected ?string $urlScheme = null;
 
-    protected ?string $_entryFormat = '%datetime%  %channel% %level_name%  %message%';
+    protected ?string $_entryFormat = '%time%  %channel% %level_name%  %message%';
 
 
     public function __construct($stream = 'php://stdout', array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []) {
@@ -81,15 +81,15 @@ class StreamHandler extends Handler {
     }
 
 
-    protected function invokeCallback(string $datetime, int $level, string $channel, string $message, array $context = []): void {
+    protected function invokeCallback(string $time, int $level, string $channel, string $message, array $context = []): void {
         // Do entry formatting here.
-        $output = trim(preg_replace_callback('/%([a-z_]+)%/', function($m) use ($datetime, $level, $channel, $message) {
+        $output = trim(preg_replace_callback('/%([a-z_]+)%/', function($m) use ($time, $level, $channel, $message) {
             switch ($m[1]) {
                 case 'channel': return $channel;
-                case 'datetime': return $datetime;
                 case 'level': return (string)$level;
                 case 'level_name': return strtoupper(Level::from($level)->name);
                 case 'message': return $message;
+                case 'time': return $time;
                 default: return '';
             }
         }, $this->_entryFormat));
