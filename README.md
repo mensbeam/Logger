@@ -277,7 +277,7 @@ $handler = new StreamHandler(options: [
     'messageTransform' => function (string $message, array $context): string {
         return vsprintf($message, $context);
     }
-])
+]);
 ```
 
 Of course this is a simplistic example. One would want to convert the `$context` array to numerical keys (or just use numerical keys) before usage in `vsprintf`, but as can be seen it's very possible.
