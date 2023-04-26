@@ -30,7 +30,7 @@ class StreamHandler extends Handler {
         // need it as a integer representation in bytes.
         if (preg_match('/^\s*(?<num>\d+)(?:\.\d+)?\s*(?<unit>[gkm])\s*$/i', ini_get('memory_limit'), $matches) === 1) {
             $num = (int)$matches['num'];
-            switch ($matches['unit'] ?? '') {
+            switch (strtolower($matches['unit'] ?? '')) {
                 case 'g': $num *= 1024;
                 case 'm': $num *= 1024;
                 case 'k': $num *= 1024;
