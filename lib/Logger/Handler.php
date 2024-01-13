@@ -66,7 +66,7 @@ abstract class Handler {
             return;
         }
 
-        $time = \DateTimeImmutable::createFromFormat('U.u', (string)microtime(true))->format($this->_timeFormat);
+        $time = \DateTimeImmutable::createFromFormat('U.u', sprintf('%.4f', microtime(true)))->format($this->_timeFormat);
 
         $message = trim($message);
         if ($this->_messageTransform !== null) {
