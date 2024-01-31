@@ -317,7 +317,8 @@ namespace MensBeam\Logger;
 class StreamHandler extends Handler {
     public function __construct(resource|string $stream = 'php://stdout', array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []);
 
-    public function getStream(): resource|string;
+    public function getStream(): ?resource;
+    public function getURI(): ?string;
     public function setStream(resource|string $value): void;
 }
 ```
@@ -340,7 +341,11 @@ The following are recognized in the _entryFormat_ option:
 
 #### MensBeam\Logger\StreamHandler::getStream ####
 
-Returns the resource or a URL where the handler will output to
+Returns the resource where the handler will output to
+
+#### MensBeam\Logger\StreamHandler::getURI ####
+
+Returns the URI where the handler will output to
 
 #### MensBeam\Logger\StreamHandler::setStream ####
 
