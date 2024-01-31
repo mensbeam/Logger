@@ -16,8 +16,8 @@ use MensBeam\{
 class StreamHandler extends Handler {
     protected int $chunkSize = 10 * 1024 * 1024;
     protected $resource = null;
-    protected ?string $url = null;
-    protected ?string $urlScheme = null;
+    protected ?string $uri = null;
+    protected ?string $uriScheme = null;
 
     protected ?string $_entryFormat = '%time%  %channel% %level_name%  %message%';
 
@@ -54,14 +54,26 @@ class StreamHandler extends Handler {
 
 
     public function getStream() {
-        return $this->resource ?? $this->url;
+        return $this->resource;
+    }
+
+    public function getURI(): ?string {
+        return $this->uri;
     }
 
     public function setStream($value): void {
-        if (is_resource($value)) {
+        $isResource = is_resource($value);
+        if (!$isResource && !is_string($value)) {
+            $type = gettype($value);
+            $type = ($type === 'object') ? $value::class : $type;
+            throw new InvalidArgumentException(sprintf('Argument #1 ($value) must be of type resource|string, %s given', $type));
+        } elseif ($isResource) {
             $this->resource = $value;
+            $value = stream_get_meta_data($value)['uri'] ?? null;
             stream_set_chunk_size($this->resource, $this->chunkSize);
-        } elseif(is_string($value)) {
+        }
+
+        if ($value !== null) {
             $value = Path::canonicalize($value);
             // This wouldn't be useful for validating a URI schema, but it's fine for what this needs
             preg_match('/^(?:(?<scheme>[^:\s\/]+):)?(?<slashes>\/*)/i', $value, $matches);
@@ -70,14 +82,10 @@ class StreamHandler extends Handler {
                 $relative = ($matches['scheme'] === 'file') ? ($slashCount === 0 || $slashCount === 2) : ($slashCount === 0);
                 $value = (($relative) ? getcwd() : '') . '/' . substr($value, strlen($matches[0]));
             }
-
-            $this->url = $value;
-            $this->urlScheme = $matches['scheme'] ?: 'file';
-        } else {
-            $type = gettype($value);
-            $type = ($type === 'object') ? $value::class : $type;
-            throw new InvalidArgumentException(sprintf('Argument #1 ($value) must be of type resource|string, %s given', $type));
+            $this->uriScheme = $matches['scheme'] ?: 'file';
         }
+
+        $this->uri = $value;
     }
 
 
@@ -99,17 +107,22 @@ class StreamHandler extends Handler {
         }
         $output .= \PHP_EOL;
 
-        if ($this->resource === null) {
-            if ($this->urlScheme === 'file') {
-                Fs::mkdir(dirname($this->url));
-            }
-
-            $fp = fopen($this->url, 'a');
-            stream_set_chunk_size($fp, $this->chunkSize);
-            fwrite($fp, $output);
-            fclose($fp);
-        } else {
-            fwrite($this->resource, $output);
+        if ($this->uriScheme === 'file') {
+            Fs::mkdir(dirname($this->uri));
         }
+
+        if ($this->resource === null) {
+            $this->resource = fopen($this->uri, 'a');
+            stream_set_chunk_size($this->resource, $this->chunkSize);
+        }
+        fwrite($this->resource, $output);
+    }
+
+
+    public function __destruct() {
+        if (!is_resource($this->resource)) {
+            return;
+        }
+        fclose($this->resource);
     }
 }

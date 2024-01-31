@@ -27,7 +27,16 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
 
     public function testGetStream(): void {
         $h = new StreamHandler('ook');
-        $this->assertSame(CWD . '/ook', $h->getStream());
+        $this->assertNull($h->getStream());
+        $v = vfsStream::setup('ook', 0777, [ 'ook.log' => '' ]);
+        $f = $v->url() . '/ook.log';
+        $h = new StreamHandler(fopen($f, 'a'));
+        $this->assertTrue(is_resource($h->getStream()));
+    }
+
+    public function testGetURI(): void {
+        $h = new StreamHandler('ook');
+        $this->assertSame(CWD . '/ook', $h->getURI());
     }
 
     /** @dataProvider provideEntryFormattingTests */

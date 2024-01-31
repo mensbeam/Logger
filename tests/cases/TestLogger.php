@@ -30,10 +30,10 @@ class TestLogger extends ErrorHandlingTestCase {
         $this->assertEquals(2, count($h));
         $this->assertInstanceOf(StreamHandler::class, $h[0]);
         $this->assertInstanceOf(StreamHandler::class, $h[1]);
-        $s = $h[0]->getStream();
+        $s = $h[0]->getURI();
         $this->assertIsString($s);
         $this->assertSame('php://stderr', $s);
-        $s = $h[1]->getStream();
+        $s = $h[1]->getURI();
         $this->assertIsString($s);
         $this->assertSame('php://stdout', $s);
     }
@@ -44,8 +44,8 @@ class TestLogger extends ErrorHandlingTestCase {
         // Should truncate the channel to 30 characters
         $this->assertSame('ooooooooooooooooooooooooooooo', $l->getChannel());
         $this->assertEquals(2, count($h));
-        $this->assertSame(CWD . '/ook.log', $h[0]->getStream());
-        $this->assertSame(CWD . '/eek.log', $h[1]->getStream());
+        $this->assertSame(CWD . '/ook.log', $h[0]->getURI());
+        $this->assertSame(CWD . '/eek.log', $h[1]->getURI());
     }
 
     public function testHandlerStackManipulation(): void {
@@ -57,7 +57,7 @@ class TestLogger extends ErrorHandlingTestCase {
         $this->assertInstanceOf(StreamHandler::class, $h[0]);
         $this->assertInstanceOf(StreamHandler::class, $h[1]);
         $this->assertInstanceOf(StreamHandler::class, $h[2]);
-        $this->assertSame(CWD . '/ook', end($h)->getStream());
+        $this->assertSame(CWD . '/ook', end($h)->getURI());
 
         $l->setHandlers(
             new StreamHandler(stream: 'ook'),
@@ -65,25 +65,25 @@ class TestLogger extends ErrorHandlingTestCase {
         );
         $h = $l->getHandlers();
         $this->assertEquals(2, count($h));
-        $this->assertSame(CWD . '/ook', $h[0]->getStream());
-        $this->assertSame(CWD . '/eek', $h[1]->getStream());
+        $this->assertSame(CWD . '/ook', $h[0]->getURI());
+        $this->assertSame(CWD . '/eek', $h[1]->getURI());
 
         $h1 = $l->shiftHandler();
         $this->assertSame($h[0], $h1);
         $h = $l->getHandlers();
-        $this->assertSame(CWD . '/eek', $h[0]->getStream());
+        $this->assertSame(CWD . '/eek', $h[0]->getURI());
         $this->assertEquals(1, count($l->getHandlers()));
 
         $l->unshiftHandler($h1);
         $h = $l->getHandlers();
         $this->assertSame($h[0], $h1);
-        $this->assertSame(CWD . '/ook', $h[0]->getStream());
+        $this->assertSame(CWD . '/ook', $h[0]->getURI());
         $this->assertEquals(2, count($h));
 
         $h2 = $l->popHandler();
         $this->assertSame($h[1], $h2);
         $h = $l->getHandlers();
-        $this->assertSame(CWD . '/ook', $h[0]->getStream());
+        $this->assertSame(CWD . '/ook', $h[0]->getURI());
         $this->assertEquals(1, count($l->getHandlers()));
     }
 
