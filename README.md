@@ -10,6 +10,7 @@
 [j]: https://github.com/symfony/polyfill/tree/main/src/Mbstring
 [k]: https://github.com/php-fig/log
 [l]: https://ndjson.org
+[m]: https://jsonlines.org
 
 # Logger #
 
@@ -356,7 +357,7 @@ function (string $time, int $level, string $levelName, string $channel, string $
  <dd>The context array used when dispatching the entry</dd>
 </dl>
 
-Here is an example of how to use the _entryTransform_ option to output entries to `php://stdout` as [NDJSON][l]:
+Here is an example of how to use the _entryTransform_ option to output entries to `php://stdout` as [JSONLines][m]/[NDJSON][l]/whatever (ugh):
 
 ```php
 use MensBeam\Logger,
