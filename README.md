@@ -9,6 +9,7 @@
 [i]: https://github.com/symfony/polyfill/tree/main/src/Ctype
 [j]: https://github.com/symfony/polyfill/tree/main/src/Mbstring
 [k]: https://github.com/php-fig/log
+[l]: https://ndjson.org
 
 # Logger #
 
@@ -325,19 +326,60 @@ class StreamHandler extends Handler {
 
 #### Options ####
 
-_entryFormat_: The format of the outputted log entry. Defaults to _"%time%  %channel% %level\_name%  %message%"_  
+_entryTransform_: A callable where the log entry can be manipulated. Defaults to _null_  
 
-##### Entry Format #####
+##### Entry Transform #####
 
-The following are recognized in the _entryFormat_ option:
+```php
+function (string $time, int $level, string $levelName, string $channel, string $message, array $context): string;
+```
 
-| Format       | Description       | Example                                                                |
-| ------------ | ----------------- | ---------------------------------------------------------------------- |
-| %channel%    | channel name      | ook                                                                    |
-| %level%      | log level integer | 1                                                                      |
-| %level_name% | log level name    | ALERT                                                                  |
-| %message%    | log message       | Uncaught Error: Call to undefined function ook() in /path/to/ook.php:7 |
-| %time%       | timestamp         | Apr 08 09:58:12                                                        |
+###### Parameters ######
+
+<dl>
+ <dt>time</dt>
+ <dd>The timestamp the log entry was dispatched at; can be altered with the <i>timeFormat</i> option</dd>
+
+ <dt>level</dt>
+ <dd>The RFC 5424 level integer for the entry</dd>
+
+ <dt>levelName</dt>
+ <dd>The RFC 5424 level name for the entry</dd>
+
+ <dt>channel</dt>
+ <dd>The channel defined when creating the logger</dd>
+
+ <dt>message</dt>
+ <dd>The message string; can be manipulated with the <i>messageTransform</i> option</dd>
+
+ <dt>context</dt>
+ <dd>The context array used when dispatching the entry</dd>
+</dl>
+
+Here is an example of how to use the _entryTransform_ option to output entries to `php://stdout` as [NDJSON][l]:
+
+```php
+use MensBeam\Logger,
+    MensBeam\Logger\StreamHandler;
+
+$handler = new StreamHandler(options: [
+    'entryTransform' => function (string $time, int $level, string $levelName, string $channel, string $message, array $context): string {
+        $entry = [
+            'time' => $time,
+            'level' => $level,
+            'levelName' => $levelName,
+            'channel' => $channel,
+            'message' => $message
+        ];
+
+        return json_encode($entry, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
+    }
+]);
+
+$logger = new Logger('ook', $handler);
+$logger->info("ook\neek");
+// {"time":"Feb 03 22:45:17","level":6,"levelName":"Info","channel":"ook","message":"ook\neek"}
+```
 
 #### MensBeam\Logger\StreamHandler::getStream ####
 

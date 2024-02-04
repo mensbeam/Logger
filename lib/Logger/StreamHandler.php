@@ -19,7 +19,7 @@ class StreamHandler extends Handler {
     protected ?string $uri = null;
     protected ?string $uriScheme = null;
 
-    protected ?string $_entryFormat = '%time%  %channel% %level_name%  %message%';
+    protected $_entryTransform = null;
 
 
     public function __construct($stream = 'php://stdout', array $levels = [ 0, 1, 2, 3, 4, 5, 6, 7 ], array $options = []) {
@@ -41,12 +41,6 @@ class StreamHandler extends Handler {
         }
 
         $this->setStream($stream);
-
-        // Bad dog, no biscuit!
-        if (($options['entryFormat'] ?? null) === '') {
-            $options['entryFormat'] = $this->_entryFormat;
-        }
-
         parent::__construct($levels, $options);
     }
 
@@ -59,6 +53,16 @@ class StreamHandler extends Handler {
 
     public function getURI(): ?string {
         return $this->uri;
+    }
+
+    public function setOption(string $name, mixed $value): void {
+        if ($name === 'entryTransform' && !is_callable($value)) {
+            $type = gettype($value);
+            $type = ($type === 'object') ? $value::class : $type;
+            throw new TypeError(sprintf('Value of entryTransform option must be callable, %s given', $type));
+        }
+
+        parent::setOption($name, $value);
     }
 
     public function setStream($value): void {
@@ -90,17 +94,17 @@ class StreamHandler extends Handler {
 
 
     protected function invokeCallback(string $time, int $level, string $channel, string $message, array $context = []): void {
-        // Do entry formatting here.
-        $output = trim(preg_replace_callback('/%([a-z_]+)%/', function($m) use ($time, $level, $channel, $message) {
-            switch ($m[1]) {
-                case 'channel': return $channel;
-                case 'level': return (string)$level;
-                case 'level_name': return strtoupper(Level::from($level)->name);
-                case 'message': return $message;
-                case 'time': return $time;
-                default: return '';
+        if ($this->_entryTransform !== null) {
+            $output = call_user_func($this->_entryTransform, $time, $level, Level::from($level)->name, $channel, $message, $context);
+            if (!is_string($output)) {
+                $type = gettype($output);
+                $type = ($type === 'object') ? $output::class : $type;
+                throw new TypeError(sprintf('Return value of entryTransform option callable must be a string, %s given', $type));
             }
-        }, $this->_entryFormat));
+        } else {
+            $output = sprintf('%s  %s %s  %s', $time, $channel, strtoupper(Level::from($level)->name), $message);
+        }
+
         // If output contains any newlines then add an additional newline to aid readability.
         if (str_contains($output, \PHP_EOL)) {
             $output .= \PHP_EOL;

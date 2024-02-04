@@ -54,7 +54,9 @@ abstract class Handler {
         }
 
         if ($name === 'messageTransform' && !is_callable($value)) {
-            throw new TypeError(sprintf('Value of messageTransform option must be callable'));
+            $type = gettype($value);
+            $type = ($type === 'object') ? $value::class : $type;
+            throw new TypeError(sprintf('Value of messageTransform option must be callable, %s given', $type));
         }
 
         $name = "_$name";
@@ -70,8 +72,12 @@ abstract class Handler {
 
         $message = trim($message);
         if ($this->_messageTransform !== null) {
-            $t = $this->_messageTransform;
-            $message = $t($message, $context);
+            $message = call_user_func($this->_messageTransform, $message, $context);
+            if (!is_string($message)) {
+                $type = gettype($message);
+                $type = ($type === 'object') ? $message::class : $type;
+                throw new TypeError(sprintf('Return value of messageTransform option callable must be a string, %s given', $type));
+            }
         }
 
         $this->invokeCallback($time, $level, $channel ?? '', $message, $context);

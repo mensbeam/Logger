@@ -7,19 +7,24 @@
 
 declare(strict_types=1);
 namespace MensBeam\Logger\Test;
-use MensBeam\Logger,
-    org\bovigo\vfs\vfsStream;
+use org\bovigo\vfs\vfsStream;
 use MensBeam\Logger\{
     InvalidArgumentException,
-    IOException,
     Level,
-    StreamHandler
+    StreamHandler,
+    TypeError
+};
+use PHPUnit\Framework\{
+    TestCase,
+    Attributes\CoversClass,
+    Attributes\DataProvider
 };
 
 
-/** @covers \MensBeam\Logger\StreamHandler */
-class TestStreamHandler extends \PHPUnit\Framework\TestCase {
-    /** @dataProvider provideResourceTypesTests */
+#[CoversClass('MensBeam\Logger\StreamHandler')]
+class TestStreamHandler extends TestCase {
+
+    #[DataProvider('provideResourceTypesTests')]
     public function testResourceTypes(\Closure $closure): void {
         $regex = '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ERROR  Ook!\nEek!\n/';
         $this->assertEquals(1, preg_match($regex, $closure()));
@@ -39,20 +44,20 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
         $this->assertSame(CWD . '/ook', $h->getURI());
     }
 
-    /** @dataProvider provideEntryFormattingTests */
-    public function testEntryFormatting(string $entryFormat, string $regex): void {
+    #[DataProvider('provideEntryTransformingTests')]
+    public function testEntryTransforming(\Closure $entryTransform, string $regex): void {
         $s = fopen('php://memory', 'r+');
         $h = new StreamHandler(stream: $s, options: [
-            'entryFormat' => $entryFormat
+            'entryTransform' => $entryTransform
         ]);
         $h(Level::Error->value, 'ook', 'ook');
         rewind($s);
         $o = stream_get_contents($s);
-        $this->assertEquals(1, preg_match($regex, $o));
+        $this->assertMatchesRegularExpression($regex, $o);
         fclose($s);
     }
 
-    /** @dataProvider provideFatalErrorTests */
+    #[DataProvider('provideFatalErrorTests')]
     public function testFatalErrors(string $throwableClassName, int $code, string $message, \Closure $closure): void {
         $this->expectException($throwableClassName);
         $this->expectExceptionMessage($message);
@@ -60,7 +65,8 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
             $this->expectExceptionCode($code);
         }
 
-        $closure(new StreamHandler());
+        $s = fopen('php://memory', 'r+');
+        $closure(new StreamHandler($s));
     }
 
 
@@ -97,11 +103,20 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
         }
     }
 
-    public static function provideEntryFormattingTests(): iterable {
+    public static function provideEntryTransformingTests(): iterable {
         $iterable = [
-            [ '%ook%', '/\n/' ],
-            [ '%channel% %channel% %channel% %channel% %level% %level_name%', '/ook ook ook ook 3 ERROR\n/' ],
-            [ '', '/^' . (new \DateTimeImmutable())->format('M d') .  ' \d{2}:\d{2}:\d{2}  ook ERROR  ook\n/' ]
+            [
+                function (): string {
+                    return '';
+                },
+                '/\n/'
+            ],
+            [
+                function (string $time, int $level, string $levelName, string $channel): string {
+                    return "$channel $channel $channel $channel $level $levelName";
+                },
+                '/ook ook ook ook 3 Error\n/'
+            ]
         ];
 
         foreach ($iterable as $i) {
@@ -117,6 +132,48 @@ class TestStreamHandler extends \PHPUnit\Framework\TestCase {
                 'Argument #1 ($value) must be of type resource|string, integer given',
                 function (StreamHandler $h): void {
                     new StreamHandler(42);
+                }
+            ],
+            [
+                InvalidArgumentException::class,
+                0,
+                'Argument #1 ($value) must be of type resource|string, DateTimeImmutable given',
+                function (StreamHandler $h): void {
+                    new StreamHandler(new \DateTimeImmutable());
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Value of entryTransform option must be callable, integer given',
+                function (StreamHandler $h): void {
+                    $h->setOption('entryTransform', 42);
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Value of entryTransform option must be callable, DateTimeImmutable given',
+                function (StreamHandler $h): void {
+                    $h->setOption('entryTransform', new \DateTimeImmutable());
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Return value of entryTransform option callable must be a string, integer given',
+                function (StreamHandler $h): void {
+                    $h->setOption('entryTransform', fn() => 42);
+                    $h(Level::Error->value, 'fail', 'fail');
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Return value of entryTransform option callable must be a string, DateTimeImmutable given',
+                function (StreamHandler $h): void {
+                    $h->setOption('entryTransform', fn() => new \DateTimeImmutable());
+                    $h(Level::Error->value, 'fail', 'fail');
                 }
             ]
         ];

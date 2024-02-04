@@ -98,14 +98,41 @@ class TestHandler extends ErrorHandlingTestCase {
     }
 
 
+    // 'Return value of messageTransform option callable must be a string, %s given'
     public static function provideFatalErrorTests(): iterable {
         $iterable = [
             [
                 TypeError::class,
                 0,
-                'Value of messageTransform option must be callable',
+                'Value of messageTransform option must be callable, integer given',
                 function (Handler $h): void {
                     $h->setOption('messageTransform', 42);
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Value of messageTransform option must be callable, DateTimeImmutable given',
+                function (Handler $h): void {
+                    $h->setOption('messageTransform', new \DateTimeImmutable());
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Return value of messageTransform option callable must be a string, integer given',
+                function (Handler $h): void {
+                    $h->setOption('messageTransform', fn() => 42);
+                    $h(Level::Error->value, 'fail', 'fail');
+                }
+            ],
+            [
+                TypeError::class,
+                0,
+                'Return value of messageTransform option callable must be a string, DateTimeImmutable given',
+                function (Handler $h): void {
+                    $h->setOption('messageTransform', fn() => new \DateTimeImmutable());
+                    $h(Level::Error->value, 'fail', 'fail');
                 }
             ],
             [
