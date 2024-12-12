@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "mensbeam/filesystem",
-            "version": "v1.0.1",
+            "version": "v1.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mensbeam/Filesystem.git",
-                "reference": "43a5121123636d803fe29c98a47e6ba27d674d8f"
+                "reference": "629fdfbe6bf4533ca86c0c2424f556795ca5bfdb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mensbeam/Filesystem/zipball/43a5121123636d803fe29c98a47e6ba27d674d8f",
-                "reference": "43a5121123636d803fe29c98a47e6ba27d674d8f",
+                "url": "https://api.github.com/repos/mensbeam/Filesystem/zipball/629fdfbe6bf4533ca86c0c2424f556795ca5bfdb",
+                "reference": "629fdfbe6bf4533ca86c0c2424f556795ca5bfdb",
                 "shasum": ""
             },
             "require": {
@@ -52,9 +52,9 @@
             ],
             "description": "Simplifies using many of php's built-in filesystem functions",
             "support": {
-                "source": "https://github.com/mensbeam/Filesystem/tree/v1.0.1"
+                "source": "https://github.com/mensbeam/Filesystem/tree/v1.0.2"
             },
-            "time": "2023-11-15T02:40:20+00:00"
+            "time": "2024-12-10T19:26:02+00:00"
         },
         {
             "name": "psr/log",

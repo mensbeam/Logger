@@ -7,15 +7,21 @@
     colors="true"
     executionOrder="defects"
     requireCoverageMetadata="true"
+    displayDetailsOnTestsThatTriggerDeprecations="true"
+    displayDetailsOnTestsThatTriggerErrors="true"
+    displayDetailsOnTestsThatTriggerNotices="true"
+    displayDetailsOnTestsThatTriggerWarnings="true"
+    displayDetailsOnPhpunitDeprecations="true"
 >
   <testsuites>
     <testsuite name="Main">
       <directory prefix="Test" suffix=".php">./cases</directory>
     </testsuite>
   </testsuites>
-  <coverage>
+  <coverage/>
+  <source>
     <include>
       <directory suffix=".php">../lib</directory>
     </include>
-  </coverage>
+  </source>
 </phpunit>
